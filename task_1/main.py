@@ -31,6 +31,7 @@ def get_data():
 
 def write_to_csv(file):
     list_to_write = get_data()
+
     with open(file, 'w') as f_n:
         f_n_writer = csv.writer(f_n)
         for row in list_to_write:
