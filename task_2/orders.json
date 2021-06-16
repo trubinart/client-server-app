@@ -1,0 +1,16 @@
+[
+  {
+    "item": "boots",
+    "quantity": 23,
+    "price": 4000,
+    "buyer": "KENT",
+    "date": 23
+  },
+  {
+    "item": "boots",
+    "quantity": 23,
+    "price": 4000,
+    "buyer": "KENT",
+    "date": 23
+  }
+]
