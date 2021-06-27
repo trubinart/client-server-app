@@ -3,7 +3,6 @@ from server import create_presence_responce
 from moduls import load_settings
 from service_code import actions, status_code
 import time
-import subprocess
 
 config = load_settings('DEVELOP')
 
