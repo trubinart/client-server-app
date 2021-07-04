@@ -6,6 +6,7 @@ from services import actions
 from socket import *
 import json
 import logging.config
+from log.log_module import log
 
 # НАСТРОЙКИ ЛОГИРОВАНИЯ
 logging.config.fileConfig('log/logging.ini',
@@ -16,7 +17,7 @@ logger = logging.getLogger('client')
 # ЗАГРУЖАЮ НАСТРОЙКИ
 config = load_settings('DEVELOP')
 
-
+@log(logger)
 def create_presence_message(account_name):
     message = {
         config['ACTION']: actions.PRESENCE,
@@ -28,7 +29,7 @@ def create_presence_message(account_name):
     logger.info(f'Сформировано presence сообщение')
     return message
 
-
+@log(logger)
 def check_responce(responce):
     if config['RESPONSE'] in responce:
         if responce[config['RESPONSE']] == 200:
@@ -40,7 +41,7 @@ def check_responce(responce):
             return '400'
     raise ValueError
 
-
+@log(logger)
 def start_client():
     try:
         server_ip = sys.argv[1]

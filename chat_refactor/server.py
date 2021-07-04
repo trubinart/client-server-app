@@ -5,6 +5,7 @@ from services import actions, status_code
 from socket import *
 import json
 import logging.config
+from log.log_module import log
 
 # НАСТРОЙКИ ЛОГИРОВАНИЯ
 logging.config.fileConfig('log/logging.ini',
@@ -17,6 +18,7 @@ config = load_settings('DEVELOP')
 
 
 # СОЗДАЮ ОТВЕТ НА PRESENCE СООБЩЕНИЕ ОТ КЛИЕНТА
+@log(logger)
 def create_presence_responce(message):
     if config['ACTION'] in message \
             and message[config['ACTION']] == actions.PRESENCE \
@@ -34,6 +36,7 @@ def create_presence_responce(message):
 
 
 # ЗАПУСК И НАСТРОЙКА СЕРВЕРА
+@log(logger)
 def start_server():
     try:
         listen_ip = sys.argv[1]
