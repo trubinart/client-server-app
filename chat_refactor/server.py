@@ -25,7 +25,7 @@ def create_presence_responce(message):
         logger.info(f'Ответ от сервера сформирован успешно - КОД 200')
         return {config['RESPONSE']: status_code.OK}
 
-    logger.error(f'Некорректное сообщение от клиента. Ответ от сервера - КОД 400 \n'
+    logger.error(f'Некорректное сообщение от клиента. Ответ от сервера: КОД 400 \n'
                  f'{message}')
     return {
         config['RESPONSE']: status_code.BAD_REQUEST,
