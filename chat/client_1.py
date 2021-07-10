@@ -6,6 +6,7 @@ from services import actions
 from socket import *
 import json
 import logging.config
+from threading import Thread
 
 # НАСТРОЙКИ ЛОГИРОВАНИЯ
 logging.config.fileConfig('log/logging.ini',
@@ -29,6 +30,18 @@ def create_presence_message(account_name):
     return message
 
 
+def create_msg(message, account_name):
+    message = {
+        config['ACTION']: actions.MSQ,
+        config['TIME']: time.ctime(time.time()),
+        config['TO']: "#room_name",
+        config['FROM']: account_name,
+        config['MESSAGE']: message
+    }
+    logger.info(f'Сформировано msg от клиента')
+    return message
+
+
 def check_responce(responce):
     if config['RESPONSE'] in responce:
         if responce[config['RESPONSE']] == 200:
@@ -40,6 +53,18 @@ def check_responce(responce):
             return '400'
     raise ValueError
 
+def thread_for_send(transport,account_name):
+    while True:
+        message = input('Введите сообщение: ')
+        msg = create_msg(message, account_name)
+        send_message(transport, msg, config['ENCODING'])
+        logger.info(f'Отправлено сообщение серверу {msg["message"]}')
+
+def thread_for_write(transport):
+    while True:
+        msg = get_message(transport, int(config['MAX_PACKAGE_LENGTH']), config['ENCODING'])
+        logger.info(f'Получено сообщение от {msg["from"]} - {msg["message"]}')
+        print(msg['message'])
 
 def start_client():
     try:
@@ -65,22 +90,26 @@ def start_client():
 
     transport = socket(AF_INET, SOCK_STREAM)
     transport.connect((server_ip, server_port))
+    account_name = 'artem trubin'
 
     logger.info(f'Успешное подключение на клиенте: host {server_ip}, port {server_port}')
 
-    presence_message = create_presence_message('artem trubin')
+    presence_message = create_presence_message(account_name)
     send_message(transport, presence_message, config['ENCODING'])
     logger.info(f'Сообщение от клиента отправлено успешно')
 
     try:
         response = get_message(transport, int(config['MAX_PACKAGE_LENGTH']), config['ENCODING'])
         check = check_responce(response)
-        logger.info(f'Ответ от сервера декодирован успешно: ответ {check}')
+        logger.info(f'Соединение с сервером успешно установлено: ответ {check}')
     except (ValueError, json.JSONDecodeError):
         logger.error(f'Ошибка декодирования сообщения', exc_info=True)
 
-    transport.close()
+    send = Thread(target=thread_for_send, kwargs={'transport': transport, 'account_name': account_name})
+    send.start()
 
+    write = Thread(target=thread_for_write, kwargs={'transport': transport})
+    write.start()
 
 if __name__ == "__main__":
     start_client()

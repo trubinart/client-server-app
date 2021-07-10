@@ -5,6 +5,7 @@ from services import actions, status_code
 from socket import *
 import json
 import logging.config
+from select import *
 
 # НАСТРОЙКИ ЛОГИРОВАНИЯ
 logging.config.fileConfig('log/logging.ini',
@@ -32,7 +33,6 @@ def create_presence_responce(message):
         config['ERROR']: 'Bad Request'
     }
 
-
 # ЗАПУСК И НАСТРОЙКА СЕРВЕРА
 def start_server():
     try:
@@ -57,21 +57,57 @@ def start_server():
     transport = socket(AF_INET, SOCK_STREAM)
     transport.bind((listen_ip, listen_port))
     transport.listen(int(config['MAX_CONNECTIONS']))
+    transport.settimeout(0.2)
 
     logger.info(f'Успешное подключение на сервере: host {listen_ip}, port {listen_port}')
 
-    while True:
-        client, client_address = transport.accept()
-        try:
-            message = get_message(client, int(config['MAX_PACKAGE_LENGTH']), config['ENCODING'])
-            logger.info(f'Сообщение от клиента декодировано успешно')
-            response = create_presence_responce(message)
-            send_message(client, response, config['ENCODING'])
-            logger.info(f'Ответ отправлен клиенту')
-        except (ValueError, json.JSONDecodeError):
-            logger.error(f'Ошибка декодирования сообщения', exc_info=True)
+    all_clients = []
 
-        client.close()
+    while True:
+        try:
+            client, client_address = transport.accept()
+        except OSError:
+            pass
+        else:
+            logger.info(f'Установлено соедение с {client_address}')
+            all_clients.append(client)
+
+        recv_data_lst = []
+        send_data_lst = []
+        err_lst = []
+        messages_list = []
+
+        try:
+            if all_clients:
+                recv_data_lst, send_data_lst, err_lst = select(all_clients, all_clients, [], 0)
+        except OSError:
+            pass
+
+        if recv_data_lst:
+            for client_with_message in recv_data_lst:
+                message = get_message(client_with_message, int(config['MAX_PACKAGE_LENGTH']), config['ENCODING'])
+                logger.info(f'Сообщение от клиента декодировано успешно')
+
+                if message['action'] == 'presence':
+                    response = create_presence_responce(message)
+                    try:
+                        send_message(client_with_message, response, config['ENCODING'])
+                        logger.info(f'Установлено соединение с клиентом {message["user"]}')
+                    except:
+                        logger.error(f'Клиент {client_with_message.getpeername()} отключился от сервера.')
+
+                if message['action'] == 'msg':
+                    messages_list.append(message)
+                    logger.info(f'Сообщение от {message["from"]} добавлен в лист рассылки')
+
+        if messages_list and send_data_lst:
+            for msg in messages_list:
+                for waiting_client in send_data_lst:
+                    send_message(waiting_client, msg, config['ENCODING'])
+                    logger.info(f'Сообщение к {waiting_client} отправлено')
+                messages_list.remove(msg)
+                logger.info(f'Сообщение {msg} всем отправлено')
 
 if __name__ == "__main__":
     start_server()
+

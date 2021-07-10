@@ -34,7 +34,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(check_responce(responce), '400', 'test_check_responce')
 
     def test_start_client_port(self):
-        args = ['python3', 'client.py', '127.0.0.1', '1']
+        args = ['python3', 'client_1.py', '127.0.0.1', '1']
         suproc = subprocess.Popen(args, stdout=subprocess.PIPE, encoding='utf-8')
         stdout, stderr = suproc.communicate()
         self.assertEqual(stdout.replace('\n', ''), 'Порт должен быть указан в пределах от 1024 до 65535',
